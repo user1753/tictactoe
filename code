@@ -1,0 +1,86 @@
+from flask import Flask
+from flask import request
+
+n = 3
+a = [[0 for _ in range(n)] for _ in range(n)]
+turn = [0, 0]
+
+app = Flask(__name__)
+@app.route('/')
+def hello_world():
+    return 'Hello world'
+
+@app.route('/start_game')
+def start_game():
+    global turn
+    for i in range(n):
+        for j in range(n):
+            a[i][j] = 0
+    for i in range(2):
+        turn[i] = 0
+    return "reloaded"
+
+@app.route('/make_move')
+def make_move():
+    global turn
+    field = int(request.args.get('field', default="0"))
+    player = int(request.args.get('player', default="0"))
+    x = field // n
+    y = field % n
+    a[x][y] = player
+    turn[player - 1] += 1
+    return "moved"
+
+@app.route('/board')
+def board():
+    b = [['.' for _ in range(n)] for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if a[i][j] == 1:
+                b[i][j] = '*'
+            elif a[i][j] == 2:
+                b[i][j] = '0'
+    return b
+
+@app.route('/status')
+def status():
+    global turn
+    ans = ""
+    if iswinner(1):
+        ans = "PLAYER 1 WON"
+    if iswinner(2):
+        ans = "PLAYER 2 WON"
+    full = True
+    for i in range(n):
+        for j in range(n):
+            if a[i][j] == 0:
+                full = False
+    if full and ans == "":
+        ans = "DRAW"
+    if ans == "":
+        ans = "IN PROGRESS"
+    res = [turn, ans]
+    return res
+def iswinner(player):
+    for i in range(n):
+        success = [True, True]
+        for j in range(n):
+            if a[i][j] != player:
+                success[0] = False
+            if a[j][i] != player:
+                success[1] = False
+        if success[0] or success[1]:
+            return True
+
+    success = [True, True]
+    for i in range(n):
+        if a[i][i] != player:
+            success[0] = False
+        if a[i][n - 1 - i] != player:
+            success[1] = False
+    if success[0] or success[1]:
+        return True
+    return False
+
+if __name__ == '__main__':
+    app.run(debug=True)
